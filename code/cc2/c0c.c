@@ -16,9 +16,18 @@ int dump(char *strTable[], int top) {
 }
 
 int main(int argc, char * argv[]) {
-  readText(argv[1], code, TMAX);
+  char *file = argv[1], cFileName[SMAX], pFileName[SMAX], asmFileName[SMAX]; 
+
+  sprintf(cFileName, "%s.c0", file);
+  sprintf(pFileName, "%s.p0", file);
+  sprintf(asmFileName, "%s.o0", file);
+  pFile = fopen(pFileName, "wt");
+
+  readText(cFileName, code, TMAX);
   puts(code);
   lex(code);
-  dump(tokens, tokenTop);
-  parse();
+  // dump(tokens, tokenTop);
+  compile();
+  
+  fclose(pFile);
 }

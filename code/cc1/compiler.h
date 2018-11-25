@@ -18,12 +18,13 @@ extern char *tokens[], tokenTop, tokenIdx;
 // extern int types[];
 extern int tokenLines[], tokenPos[];
 extern char *tokenStarts[];
+extern FILE *pFile;
 
 #define isDigit(ch) ((ch) >= '0' && (ch) <='9')
 
 #define isAlpha(ch) (((ch) >= 'a' && (ch) <='z') || ((ch) >= 'A' && (ch) <= 'Z'))
 
 int lex(char *text);
-void parse();
+void compile();
 
 #endif

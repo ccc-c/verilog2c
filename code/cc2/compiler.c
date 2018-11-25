@@ -3,18 +3,35 @@
 
 int E();
 void STMT();
+void VAR();
+int CALL();
 
 int tempIdx = 0, labelIdx = 0;
+FILE *pFile;
+
+/*
+char *nextTemp() {
+  char name[SMAX];
+  sprintf(name, "t%d", tempIdx++);
+  return strAdd(name);
+}
+*/
 
 #define nextTemp() (tempIdx++)
 #define nextLabel() (labelIdx++)
-#define emit printf
+
+#define emit(...) do{ printf( __VA_ARGS__ ); fprintf(pFile, __VA_ARGS__); } while( 0 )
+// #define emit printf
 
 int isNext(char *set) {
   char eset[SMAX], etoken[SMAX];
   sprintf(eset, " %s ", set);
   sprintf(etoken, " %s ", tokens[tokenIdx]);
   return (tokenIdx < tokenTop && strstr(eset, etoken) != NULL);
+}
+
+int isNextType(int type) {
+  return (tokenIdx < tokenTop && tokenTypes[tokenIdx] == type);
 }
 
 char *next() {
@@ -38,17 +55,30 @@ char *skip(char *set) {
   }
 }
 
-// F = (E) | Number | Id
+// F = (E) | Number | Literal | Id | CALL
 int F() {
   int f;
   if (isNext("(")) { // '(' E ')'
     next(); // (
     f = E();
     next(); // )
-  } else { // Number | Id
+  } else if (isNextType(Literal)) { // ex: "literal ...."
     f = nextTemp();
-    char *item = next();
-    emit("t%d = %s\n", f, item);
+    char *literal = next();
+    emit("t%d = %s\n",  f, literal);
+  } else if (isNextType(Number)) { // ex: 34
+    f = nextTemp();
+    char *num = next();
+    emit("t%d = %s\n", f, num);
+  } else if (isNextType(Id)) {
+    if (isNext("(")) { // CALL
+      back();
+      f = CALL();
+    } else { // id
+      f = nextTemp();
+      char *item = next();
+      emit("t%d = %s\n", f, item);
+    }
   }
   return f;
 }
@@ -100,63 +130,83 @@ void IF() {
 }
 
 // BLOCK = { STMT* }
-void BLOCK() {
+void BLOCK(char type) { // type: b:body, c:code
   skip("{");
+  if (type == 'b') {
+    while (isNext("var")) VAR();
+  }
   while (!isNext("}")) {
     STMT();
   }
   skip("}");
 }
 
+// return E;
 void RETURN() {
   skip("return");
   int e = E();
-  emit("return t%d", e);
+  emit("return t%d\n", e);
+  skip(";");
 }
 
 
-// CALL = id ( ELIST ) ; 
-void CALL() {
+// CALL = id ( ELIST )
+int CALL() {
   char *id = next();
   skip("(");
   if (!isNext(")")) {
     int e = E();
     emit("push t%d\n", e);
     while (isNext(",")) {
+      skip(",");
       e = E();
       emit("push t%d\n", e);
     }
   }
   skip(")");
-  skip(";");
-  emit("call %s\n", id);
+  // skip(";");
+  int t = nextTemp();
+  emit("t%d = call %s\n", t, id);
 }
 
-// STMT = WHILE | IF | BLOCK | RETURN | ASSIGN | CALL
+// STMT = WHILE | IF | BLOCK | RETURN | ASSIGN | CALL;
 void STMT() {
   if (isNext("while"))
     WHILE();
   else if (isNext("if"))
     IF();
   else if (isNext("{"))
-    BLOCK();
+    BLOCK('c'); // code block
   else if (isNext("return"))
     RETURN();
   else {
     char *id = next();
-    if (isNext("(")) { // CALL: id (...)
+    if (isNext("(")) { // CALL: id (...);
       back();
       CALL();
     } else if (isNext("=")) { // ASSIGN: id = E;
       skip("=");
       int e = E();
-      skip(";");
       emit("%s = t%d\n", id, e);
     }
+    skip(";");
   }
 }
 
-// FUNC = def id (idLIST) BLOCK
+// VAR = var idList;
+void VAR() {
+  skip("var");
+  char *id = next(); // 宣告變數
+  emit("var %s\n", id);
+  while (isNext(",")) {
+    skip(",");
+    id = next();
+    emit("var %s\n", id);
+  }
+  skip(";");
+}
+
+// FUNC = def id (idLIST) BODY   ; BODY = BLOCK('b')
 void FUNC() {
   skip("def");
   char *id = next();
@@ -172,7 +222,7 @@ void FUNC() {
     }
   }
   skip(")");
-  BLOCK();
+  BLOCK('b');
 }
 
 // PROG = STMT
@@ -180,14 +230,16 @@ void PROG() {
   while (tokenIdx < tokenTop) {
     if (isNext("def"))
       FUNC();
+    else if (isNext("var"))
+      VAR();
     else
       STMT();
   }
   // STMT();
 }
 
-void parse() {
-  printf("============ parse =============\n");
+void compile() {
+  printf("============ compile =============\n");
   tokenIdx = 0;
   PROG();
 }

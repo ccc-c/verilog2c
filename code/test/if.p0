@@ -1,0 +1,10 @@
+t0 = isSuccess
+goto L0 if T0=0
+t1 = "Success!"
+push t1
+t2 = call printf
+goto L1
+t3 = "Fail!"
+push t3
+t4 = call printf
+(L1)

@@ -1,0 +1,26 @@
+function sum
+param n
+var s
+var i
+t0 = 0
+s = t0
+t1 = 1
+i = t1
+(L0)
+t2 = i
+t3 = n
+t4 = t2 <= t3
+goto L1 if T4
+t5 = s
+t6 = i
+t7 = t5 + t6
+s = t7
+t8 = i
+t9 = 1
+t10 = t8 + t9
+i = t10
+goto L0
+(L1)
+t11 = s
+return t11
+t12 = sum
